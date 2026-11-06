@@ -121,6 +121,7 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--text
 .tip .r{display:flex;justify-content:space-between;gap:14px}
 .axis{fill:var(--text-3);font-size:11px}
 .vlab{fill:var(--text-2);font-weight:600}
+.slab{font-weight:700;pointer-events:none}
 .grid{stroke:var(--line);stroke-width:1}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
 .stat .s{font-size:12px;color:var(--text-3);margin-top:1px}
@@ -681,7 +682,7 @@ function stackedBars(el, labels, series, opts={}){
   const W=340, H=210, L=44, R=6, T=22, B=24;
   const n = labels.length, totals = labels.map((_,i)=>series.reduce((s,se)=>s+se.values[i],0));
   const step = niceMax(Math.max(...totals)/4), max = step*4;
-  const bw = (W-L-R)/n, barW = Math.min(opts.maxBar||20, bw*0.62);
+  const bw = (W-L-R)/n, barW = Math.min(opts.maxBar||20, bw*(opts.fill||0.62));
   const y = v => T + (H-T-B) * (1 - v/max);
   let g = "";
   for (let k=0;k<=4;k++){ const v = max*k/4, yy=y(v);
@@ -699,6 +700,12 @@ function stackedBars(el, labels, series, opts={}){
       if (top){ const r=Math.min(4,h/2,barW/2);
         bars += `<path d="M${x0},${yy+h} V${yy+r} Q${x0},${yy} ${x0+r},${yy} H${x0+barW-r} Q${x0+barW},${yy} ${x0+barW},${yy+r} V${yy+h} Z" fill="${s.color}"/>`;
       } else bars += `<rect x="${x0}" y="${yy}" width="${barW}" height="${h}" fill="${s.color}"/>`;
+      const fs = opts.segSize || 7;
+      if (opts.segLabels && h >= fs + 4){
+        const t = (opts.fmtSeg||kfmt)(s.values[i]);
+        if (t.length * fs * 0.56 <= barW + 1)
+          bars += `<text class="slab num" x="${cx}" y="${yy + h/2 + fs*0.36}" text-anchor="middle" style="font-size:${fs}px;fill:${s.ink||'#fff'}">${t}</text>`;
+      }
     });
     g += `<g data-i="${i}" style="transition:opacity .12s">${bars}</g>`;
     if (totals[i]>0) g += `<text class="vlab num" x="${cx}" y="${y(totals[i])-5}" text-anchor="middle" style="font-size:${opts.labSize||8.5}px">${(opts.fmtLab||kfmt)(totals[i])}</text>`;
@@ -730,16 +737,16 @@ function renderCharts(al){
     $("#yMin").textContent = MES3[mn.i]; $("#yMinV").textContent = brl(mn.v);
   } else { $("#yMax").textContent = $("#yMin").textContent = "—"; $("#yMaxV").textContent = $("#yMinV").textContent = ""; }
   legend($("#lgMonth")); legend($("#lgYear"));
-  stackedBars($("#chMonth"), MES3.map(s=>s[0]+s.slice(1,3).toLowerCase()), PAY_ORDER.map(p=>({key:p,name:PAY[p].n,color:PAY[p].c,values:months.map(it=>sum(it.filter(a=>a.e.pag===p)))})),
-    {aria:`Gastos mensais de ${gY} por cartão`, hl: gY===curY? curM : -1, title:i=>`${MESES[i]} ${gY}`});
+  stackedBars($("#chMonth"), MES3.map(s=>s[0]+s.slice(1,3).toLowerCase()), PAY_ORDER.map(p=>({key:p,name:PAY[p].n,color:PAY[p].c,ink:p==="outro"?"#1a1a19":"#fff",values:months.map(it=>sum(it.filter(a=>a.e.pag===p)))})),
+    {aria:`Gastos mensais de ${gY} por cartão`, hl: gY===curY? curM : -1, title:i=>`${MESES[i]} ${gY}`, fill:0.84, maxBar:22, segLabels:true, segSize:6.6});
   const yi = al.filter(a=>a.y===gY && (yCardF==="all" || a.e.pag===yCardF));
   renderCatBars($("#yCats"), yi);
   // anual
   const years = [...new Set(al.map(a=>a.y))].sort();
   if (!years.length) years.push(now.getFullYear());
   const ys = years.slice(-6);
-  stackedBars($("#chYear"), ys.map(String), PAY_ORDER.map(p=>({key:p,name:PAY[p].n,color:PAY[p].c,values:ys.map(Y=>sum(al.filter(a=>a.y===Y && a.e.pag===p)))})),
-    {aria:"Gastos por ano", maxBar:34, hl: ys.indexOf(gY), labSize:11, fmtLab:c=>brlShort(c)});
+  stackedBars($("#chYear"), ys.map(String), PAY_ORDER.map(p=>({key:p,name:PAY[p].n,color:PAY[p].c,ink:p==="outro"?"#1a1a19":"#fff",values:ys.map(Y=>sum(al.filter(a=>a.y===Y && a.e.pag===p)))})),
+    {aria:"Gastos por ano", maxBar:34, hl: ys.indexOf(gY), labSize:11, fmtLab:c=>brlShort(c), maxBar:56, segLabels:true, segSize:9.5, fmtSeg:c=>brlShort(c).replace("R$ ","")});
 }
 
 /* ---------------- render: lista (todos) ---------------- */
