@@ -755,7 +755,10 @@ function renderCharts(al){
     $("#yMax").textContent = MES3[mx.i]; $("#yMaxV").textContent = brl(mx.v);
     $("#yMin").textContent = MES3[mn.i]; $("#yMinV").textContent = brl(mn.v);
   } else { $("#yMax").textContent = $("#yMin").textContent = "—"; $("#yMaxV").textContent = $("#yMinV").textContent = ""; }
-  legend($("#lgMonth")); legend($("#lgYear")); legend($("#lgFix"));
+  legend($("#lgMonth")); legend($("#lgYear"));
+  const FIX = [{key:"rec", name:"Assinaturas (todo mês)", color:"var(--s7)", test:a=>a.rec},
+               {key:"parc", name:"Compras parceladas", color:"var(--s3)", test:a=>!a.rec && a.n>1}];
+  $("#lgFix").innerHTML = FIX.map(f=>`<span><span class="dot" style="background:${f.color}"></span>${f.name}</span>`).join("");
   const mLabels = MES3.map(s=>s[0]+s.slice(1,3).toLowerCase());
   const series = src => PAY_ORDER.map(p=>({key:p,name:PAY[p].n,color:PAY[p].c,ink:p==="outro"?"#1a1a19":"#fff",values:src.map(it=>sum(it.filter(a=>a.e.pag===p)))}));
   const barOpts = {hl: gY===now.getFullYear()? now.getMonth() : -1, title:i=>`${MESES[i]} ${gY}`, fill:0.84, maxBar:22, segLabels:true, segSize:6.6};
@@ -765,10 +768,11 @@ function renderCharts(al){
   $("#noteMonth").textContent = isCur ? `Só o que já foi gasto até ${hoje.split("-").reverse().join("/")}.` : "";
   // 2) fixed commitments: recurring + installments, including what's still to come
   const monthsFix = months.map(it => it.filter(a => a.rec || a.n > 1));
-  stackedBars($("#chFix"), mLabels, series(monthsFix), {...barOpts, aria:`Gastos fixos previstos de ${gY}`, title:i=>`${MESES[i]} ${gY} · fixos`});
+  stackedBars($("#chFix"), mLabels, FIX.map(f=>({key:f.key, name:f.name.split(" (")[0], color:f.color, ink:"#fff", values:monthsFix.map(it=>sum(it.filter(f.test)))})),
+    {...barOpts, aria:`Gastos fixos previstos de ${gY}`, title:i=>`${MESES[i]} ${gY} · fixos`});
   const fixAll = monthsFix.flat(), fixTot = sum(fixAll), fixFut = sum(fixAll.filter(a => a.d > hoje));
   $("#noteFix").textContent = !fixAll.length ? "Nenhuma assinatura ou compra parcelada neste ano."
-    : `Total fixo em ${gY}: ${brl(fixTot)}` + (fixFut ? ` · ainda a vencer: ${brl(fixFut)}` : "");
+    : `Total fixo em ${gY}: ${brl(fixTot)} (assinaturas ${brl(sum(fixAll.filter(FIX[0].test)))} · parcelas ${brl(sum(fixAll.filter(FIX[1].test)))})` + (fixFut ? ` · ainda a vencer: ${brl(fixFut)}` : "");
   const yi = al.filter(a=>a.y===gY && (yCardF==="all" || a.e.pag===yCardF));
   renderCatBars($("#yCats"), yi);
   // anual
