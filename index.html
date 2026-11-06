@@ -41,10 +41,12 @@ html,body{margin:0;background:var(--bg);color:var(--text);
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
 input,select{font:inherit;color:inherit}
 .app{max-width:520px;margin:0 auto;min-height:100vh;
-  padding:calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 96px)}
+  padding:0 16px calc(env(safe-area-inset-bottom) + 96px)}
 .view{display:none}.view.on{display:block}
 .logo{width:40px;height:40px;border-radius:10px;vertical-align:-6px;margin-right:10px;box-shadow:0 2px 6px rgba(28,92,171,.3)}
-h1{font-size:32px;letter-spacing:-.02em;margin:6px 4px 14px;font-weight:700}
+h1{font-size:32px;letter-spacing:-.02em;font-weight:700;margin:0 -16px 16px;
+  padding:calc(env(safe-area-inset-top) + 18px) 20px 18px;background:#1f66bd;color:#fff;border-radius:0 0 22px 22px}
+h1 .logo{box-shadow:0 2px 8px rgba(0,0,0,.25)}
 h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);margin:22px 6px 8px;font-weight:600}
 .card{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);padding:16px}
 .muted{color:var(--text-2)}.faint{color:var(--text-3)}
