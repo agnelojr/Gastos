@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Gastos">
-<meta name="theme-color" content="#f4f4f1">
+<meta name="theme-color" content="#1f66bd">
 <title>Controle de Gastos</title>
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -33,6 +33,7 @@
     --shadow:none;
   }
 }
+.statusbg{position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top);background:#1f66bd;z-index:15;pointer-events:none}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--bg);color:var(--text);
   font:16px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
@@ -93,6 +94,9 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--text
 .item .t{flex:1;min-width:0}
 .item .t b{display:block;font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .item .t span{font-size:13px;color:var(--text-3);white-space:nowrap}
+.item .t .tag{display:block;overflow:hidden;text-overflow:ellipsis}
+.item .t .tag .dot{margin:0 4px 0 2px;vertical-align:0}
+.item .a{flex:none}.item .a small{white-space:nowrap}
 .item .a{font-weight:600;text-align:right}
 .item .a small{display:block;font-weight:400;font-size:12px;color:var(--text-3)}
 .tag{display:inline-flex;align-items:center;gap:4px}
@@ -166,6 +170,25 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--text
 .switch.on{background:#34c759}.switch.on::after{left:22px}
 .rectot{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;font-size:14px;color:var(--text-2);background:var(--surface-2)}
 .badge{font-size:11px;font-weight:600;padding:2px 6px;border-radius:6px;background:var(--surface-2);color:var(--text-2);margin-left:6px;vertical-align:1px}
+.search{display:flex;align-items:center;gap:8px;background:var(--surface-2);border-radius:12px;padding:9px 12px;margin-bottom:10px}
+.search input{flex:1;border:0;background:none;outline:none;font-size:16px;min-width:0}
+.search .x{color:var(--text-3);font-size:18px;line-height:1}
+.hscroll{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px;margin:0 -16px;padding-left:16px;padding-right:16px;scrollbar-width:none}
+.hscroll::-webkit-scrollbar{display:none}
+.hscroll .chip{flex:none;white-space:nowrap}
+.fgroup{margin-bottom:10px}
+.range{display:none;gap:10px;margin:2px 0 10px}
+.range.on{display:flex}
+.range label{flex:1;background:var(--surface);border-radius:12px;padding:8px 12px;font-size:12px;color:var(--text-3)}
+.range input{display:block;border:0;background:none;outline:none;font-size:15px;color:var(--text);width:100%;margin-top:2px}
+.sumcard .v{font-size:30px;font-weight:700;letter-spacing:-.02em}
+.sumcard .br{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:13px;color:var(--text-2)}
+.sumcard .br span{display:inline-flex;align-items:center;gap:6px}
+.mhead{display:flex;justify-content:space-between;align-items:baseline;margin:18px 6px 6px}
+.mhead b{font-size:15px;text-transform:capitalize}
+.mhead span{font-size:14px;color:var(--text-2);font-weight:600}
+.prog{height:5px;background:var(--surface-2);border-radius:3px;margin-top:6px;overflow:hidden}
+.prog div{height:100%;border-radius:3px;background:var(--accent)}
 .err{color:var(--danger);font-size:14px;text-align:center;min-height:18px;margin-top:8px}
 
 /* settings */
@@ -188,6 +211,7 @@ textarea.csv{width:100%;height:120px;border-radius:12px;border:1px solid var(--l
 </style>
 </head>
 <body>
+<div class="statusbg" aria-hidden="true"></div>
 <div class="app">
 
   <!-- MÊS -->
@@ -298,6 +322,23 @@ textarea.csv{width:100%;height:120px;border-radius:12px;border:1px solid var(--l
       <div class="legend" id="lgYear"></div>
       <div class="chart" id="chYear"></div>
     </div>
+  </section>
+
+  <!-- LISTA -->
+  <section class="view" id="v-lista">
+    <h1>Lista</h1>
+    <div class="search"><span class="faint">🔍</span><input id="lq" type="text" enterkeyhint="search" placeholder="Buscar (ex.: iFood, posto, mercado)" autocomplete="off"><button class="x" id="lqx" aria-label="Limpar busca" style="display:none">⊗</button></div>
+    <div class="seg fgroup" id="lMode"><button data-lm="gastos" class="on">Gastos</button><button data-lm="parc">Parcelas em aberto</button></div>
+    <div id="lFilters">
+      <div class="hscroll" id="lPer">
+        <button class="chip on" data-per="mes">Este mês</button><button class="chip" data-per="3m">Últimos 3 meses</button><button class="chip" data-per="ano">Este ano</button><button class="chip" data-per="tudo">Tudo</button><button class="chip" data-per="custom">📅 Escolher período</button>
+      </div>
+      <div class="range" id="lRange"><label>De<input type="month" id="lDe"></label><label>Até<input type="month" id="lAte"></label></div>
+    </div>
+    <div class="hscroll" id="lPay"></div>
+    <div class="hscroll" id="lCat"></div>
+    <div class="card sumcard" id="lSum" style="margin-top:6px"></div>
+    <div id="lOut"></div>
   </section>
 
   <!-- AJUSTES -->
@@ -675,6 +716,104 @@ function renderCharts(al){
 
 /* ---------------- render: lista (todos) ---------------- */
 
+/* ---------------- lista: busca e filtros ---------------- */
+const lf = { q:"", per:"mes", de:"", ate:"", pay:"all", cats:new Set(), mode:"gastos" };
+const norm = t => String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+function perRange(){
+  const nowT = now.getFullYear()*12 + now.getMonth();
+  if (lf.per==="mes") return [nowT, nowT];
+  if (lf.per==="3m") return [nowT-2, nowT];
+  if (lf.per==="ano") return [now.getFullYear()*12, nowT];
+  if (lf.per==="custom"){
+    const p = v => { if (!v) return null; const [y,m]=v.split("-").map(Number); return y*12+m-1; };
+    let a = p(lf.de), b = p(lf.ate);
+    if (a==null) a = -Infinity; if (b==null) b = nowT;
+    if (a>b) [a,b]=[b,a];
+    return [a,b];
+  }
+  return [-Infinity, nowT];
+}
+function matchQ(e){ if (!lf.q) return true; const q = norm(lf.q); return norm(e.desc).includes(q) || norm(catById(e.cat).n).includes(q); }
+function matchPC(e){ return (lf.pay==="all" || e.pag===lf.pay) && (!lf.cats.size || lf.cats.has(e.cat)); }
+function renderLista(al){
+  // filter chips
+  $("#lPay").innerHTML = [["all","Todos os cartões",null],...PAY_ORDER.map(p=>[p,PAY[p].n,PAY[p].c])].map(([k,n,c]) =>
+    `<button class="chip ${lf.pay===k?'on':''}" data-lpay="${k}">${c?`<span class="dot" style="background:${c}"></span>`:''}${n}</button>`).join("");
+  $("#lCat").innerHTML = `<button class="chip ${!lf.cats.size?'on':''}" data-lcat="*">Todas as categorias</button>` +
+    state.cats.map(c=>`<button class="chip ${lf.cats.has(c.id)?'on':''}" data-lcat="${esc(c.id)}"><span class="dot" style="background:${catColor(c)}"></span>${c.e} ${esc(c.n)}</button>`).join("");
+  $$("#lPer .chip").forEach(b=>b.classList.toggle("on", b.dataset.per===lf.per));
+  $("#lRange").classList.toggle("on", lf.per==="custom");
+  $$("#lMode button").forEach(b=>b.classList.toggle("on", b.dataset.lm===lf.mode));
+  $("#lFilters").style.display = lf.mode==="gastos" ? "block" : "none";
+  $("#lqx").style.display = lf.q ? "block" : "none";
+  if (lf.mode==="parc") return renderParcelas();
+
+  const [a,b] = perRange();
+  const items = al.filter(x => { const t = x.y*12+x.m; return t>=a && t<=b && matchQ(x.e) && matchPC(x.e); });
+  const tot = sum(items), by = p => sum(items.filter(x=>x.e.pag===p));
+  const nMeses = new Set(items.map(x=>x.y*12+x.m)).size;
+  $("#lSum").innerHTML = `<div class="faint" style="font-size:14px">${items.length} lançamento${items.length===1?'':'s'}${nMeses>1?` em ${nMeses} meses`:''}</div>
+    <div class="v num">${brl(tot)}</div>
+    ${nMeses>1?`<div class="muted" style="font-size:14px">média de ${brl(tot/nMeses)} por mês</div>`:''}
+    <div class="br">${PAY_ORDER.map(p=>`<span><span class="dot" style="background:${PAY[p].c}"></span>${PAY[p].n} <b class="num">${brl(by(p))}</b></span>`).join("")}</div>`;
+  if (!items.length){ $("#lOut").innerHTML = `<div class="list" style="margin-top:14px"><div class="empty"><div class="big">🔎</div>Nada encontrado com esses filtros.</div></div>`; return; }
+  // group by month, newest first
+  const months = {};
+  items.forEach(x => { const k = x.y*12+x.m; (months[k] ||= []).push(x); });
+  $("#lOut").innerHTML = Object.keys(months).map(Number).sort((p,q)=>q-p).map(k => {
+    const arr = months[k].sort((p,q)=> q.d.localeCompare(p.d) || (q.e.criado||0)-(p.e.criado||0));
+    const y = Math.floor(k/12), m = k%12;
+    return `<div class="mhead"><b>${MESES[m]} ${y}</b><span class="num">${brl(sum(arr))}</span></div><div class="list">` +
+      arr.map(x => { const c = catById(x.e.cat); const dd = x.d.slice(8)+"/"+x.d.slice(5,7);
+        const extra = x.n>1 ? ` · ${x.k}/${x.n}` : x.rec ? " · 🔁" : "";
+        return `<button class="item" data-edit="${esc(x.e.id)}">
+          <span class="ico" style="background:color-mix(in srgb, ${catColor(c)} 18%, transparent)">${c.e}</span>
+          <span class="t"><b>${esc(x.e.desc || c.n)}</b><span class="tag">${dd} · <span class="dot" style="background:${PAY[x.e.pag]?.c};width:8px;height:8px"></span>${PAY[x.e.pag]?.n} · ${esc(c.n)}${extra}</span></span>
+          <span class="a num">${brl(x.val)}</span></button>`; }).join("") + `</div>`;
+  }).join("");
+}
+function renderParcelas(){
+  const nowT = now.getFullYear()*12 + now.getMonth();
+  const rows = [];
+  for (const e of state.expenses){
+    const n = e.parc|0; if (e.rec || n<2) continue;
+    if (!matchQ(e) || !matchPC(e)) continue;
+    const [Y,M] = e.data.split("-").map(Number); const t0 = Y*12+M-1;
+    const pagas = Math.min(n, Math.max(0, nowT - t0 + 1));
+    if (pagas >= n) continue;
+    const base = Math.floor(e.valor/n), rest = e.valor - base*n;
+    const restante = base*(n-pagas) + (pagas===0 ? rest : 0);
+    const fimT = t0 + n - 1;
+    rows.push({e, n, pagas, restante, parcela: base, fim:`${MES3[fimT%12]}/${String(Math.floor(fimT/12)).slice(2)}`});
+  }
+  rows.sort((a,b)=>b.restante-a.restante);
+  const tot = rows.reduce((s,r)=>s+r.restante,0), by = p => rows.filter(r=>r.e.pag===p).reduce((s,r)=>s+r.restante,0);
+  const prox = rows.reduce((s,r)=>s+r.parcela,0);
+  $("#lSum").innerHTML = `<div class="faint" style="font-size:14px">Ainda falta pagar · ${rows.length} compra${rows.length===1?'':'s'}</div>
+    <div class="v num">${brl(tot)}</div>
+    <div class="muted" style="font-size:14px">≈ ${brl(prox)} por mês em parcelas</div>
+    <div class="br">${["itau","bradesco"].map(p=>`<span><span class="dot" style="background:${PAY[p].c}"></span>${PAY[p].n} <b class="num">${brl(by(p))}</b></span>`).join("")}</div>`;
+  if (!rows.length){ $("#lOut").innerHTML = `<div class="list" style="margin-top:14px"><div class="empty"><div class="big">🎉</div>Nenhuma parcela em aberto.</div></div>`; return; }
+  $("#lOut").innerHTML = `<div class="list" style="margin-top:14px">` + rows.map(r => { const c = catById(r.e.cat);
+    return `<button class="item" data-edit="${esc(r.e.id)}">
+      <span class="ico" style="background:color-mix(in srgb, ${catColor(c)} 18%, transparent)">${c.e}</span>
+      <span class="t"><b>${esc(r.e.desc || c.n)}</b><span class="tag"><span class="dot" style="background:${PAY[r.e.pag]?.c};width:8px;height:8px"></span>${PAY[r.e.pag]?.n} · ${r.pagas}/${r.n} · até ${r.fim}</span>
+        <div class="prog"><div style="width:${r.pagas/r.n*100}%"></div></div></span>
+      <span class="a num">${brl(r.restante)}<small>${r.n-r.pagas}x de ${brl(r.parcela)}</small></span></button>`; }).join("") + `</div>`;
+}
+let lqT=null;
+$("#lq").addEventListener("input", e => { lf.q = e.target.value.trim(); clearTimeout(lqT); lqT = setTimeout(render, 150); });
+$("#lqx").addEventListener("click", () => { $("#lq").value=""; lf.q=""; render(); });
+$("#lMode").addEventListener("click", e => { const b=e.target.closest("[data-lm]"); if(!b) return; lf.mode=b.dataset.lm; render(); });
+$("#lPer").addEventListener("click", e => { const b=e.target.closest("[data-per]"); if(!b) return; lf.per=b.dataset.per;
+  if (lf.per==="custom" && !lf.de){ const d=new Date(now.getFullYear(), now.getMonth()-5, 1); lf.de=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; lf.ate=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`; $("#lDe").value=lf.de; $("#lAte").value=lf.ate; }
+  render(); });
+$("#lDe").addEventListener("change", e => { lf.de=e.target.value; render(); });
+$("#lAte").addEventListener("change", e => { lf.ate=e.target.value; render(); });
+$("#lPay").addEventListener("click", e => { const b=e.target.closest("[data-lpay]"); if(!b) return; lf.pay=b.dataset.lpay; render(); });
+$("#lCat").addEventListener("click", e => { const b=e.target.closest("[data-lcat]"); if(!b) return; const k=b.dataset.lcat;
+  if (k==="*") lf.cats.clear(); else if (lf.cats.has(k)) lf.cats.delete(k); else lf.cats.add(k); render(); });
+
 /* ---------------- settings ---------------- */
 function renderSettings(){
   $("#catEdit").innerHTML = state.cats.map((c,i)=>`<div class="row">
@@ -698,17 +837,17 @@ function render(){
   renderMonth(al);
   if (view==="graf") renderCharts(al);
   if (view==="aj") renderSettings();
+  if (view==="lista") renderLista(al);
 }
 
 /* ---------------- navigation ---------------- */
 function go(v){
   view = v;
   $$(".tab").forEach(t=>t.classList.toggle("on", t.dataset.v===v));
-  const sec = v==="lista" ? "mes" : v;
+  const sec = v;
   $$(".view").forEach(s=>s.classList.toggle("on", s.id==="v-"+sec));
   render();
-  if (v==="lista") setTimeout(()=>$("#lancTitle").scrollIntoView({behavior:"smooth"}), 30);
-  else window.scrollTo({top:0});
+  window.scrollTo({top:0});
 }
 $$(".tab").forEach(t=>t.addEventListener("click", ()=>go(t.dataset.v)));
 document.addEventListener("click", e => {
