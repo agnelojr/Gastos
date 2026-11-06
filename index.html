@@ -315,8 +315,8 @@ textarea.csv{width:100%;height:120px;border-radius:12px;border:1px solid var(--l
       <button class="iconbtn" data-ystep="1" aria-label="Próximo ano">›</button>
     </div>
     <div class="stats">
-      <div class="stat"><div class="k">Total no ano</div><div class="v num" id="yTotal"></div></div>
-      <div class="stat"><div class="k">Média / mês</div><div class="v num" id="yAvg"></div></div>
+      <div class="stat"><div class="k" id="yTotalK">Total no ano</div><div class="v num" id="yTotal"></div><div class="s" id="yTotalS"></div></div>
+      <div class="stat"><div class="k">Média / mês</div><div class="v num" id="yAvg"></div><div class="s" id="yAvgS"></div></div>
       <div class="stat"><div class="k">Maior mês</div><div class="v num" id="yMax"></div><div class="s num" id="yMaxV"></div></div>
       <div class="stat"><div class="k">Menor mês</div><div class="v num" id="yMin"></div><div class="s num" id="yMinV"></div></div>
     </div>
@@ -727,13 +727,22 @@ function legend(el){ el.innerHTML = PAY_ORDER.map(p=>`<span><span class="dot" st
 function renderCharts(al){
   $("#yLbl").textContent = gY;
   const months = [...Array(12)].map((_,m)=>monthAlloc(gY,m,al));
-  const tots = months.map(sum), yt = tots.reduce((a,b)=>a+b,0);
-  const active = tots.filter(v=>v>0).length || 1;
-  $("#yTotal").textContent = brlShort(yt);
-  $("#yAvg").textContent = brlShort(yt/active);
+  const tots = months.map(sum);
+  // cards count only what already happened (up to today); the chart still shows what's planned
+  const hoje = todayISO();
+  const real = months.map(it => sum(it.filter(a => a.d <= hoje)));
+  const yt = real.reduce((a,b)=>a+b,0);
+  const isCur = gY === now.getFullYear(), isFut = gY > now.getFullYear();
+  const mesesPassados = isFut ? 0 : isCur ? now.getMonth()+1 : 12;
+  const active = real.slice(0, mesesPassados).filter(v=>v>0).length;
+  $("#yTotalK").textContent = isCur ? "Total no ano até a data atual" : isFut ? "Total no ano" : "Total do ano";
+  $("#yTotalS").textContent = isCur ? `até ${hoje.split("-").reverse().join("/")}` : isFut ? "ano ainda não começou" : `jan a dez de ${gY}`;
+  $("#yTotal").textContent = isFut ? "—" : brl(yt);
+  $("#yAvg").textContent = active ? brl(Math.round(yt/active)) : "—";
+  $("#yAvgS").textContent = active ? `${active} ${active===1?'mês':'meses'} com gastos` : "";
   // months that already happened (and had spending) count for maior/menor
   const lastM = gY < now.getFullYear() ? 11 : gY > now.getFullYear() ? -1 : now.getMonth();
-  const cand = tots.map((v,i)=>({v,i})).filter(o=>o.i<=lastM && o.v>0);
+  const cand = real.map((v,i)=>({v,i})).filter(o=>o.i<=lastM && o.v>0);
   if (cand.length){
     const mx = cand.reduce((a,b)=>b.v>a.v?b:a), mn = cand.reduce((a,b)=>b.v<a.v?b:a);
     $("#yMax").textContent = MES3[mx.i]; $("#yMaxV").textContent = brl(mx.v);
