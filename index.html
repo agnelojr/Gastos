@@ -113,6 +113,7 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--text
 .chart svg{display:block;width:100%;height:auto;overflow:visible}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--text-2);margin:2px 0 10px}
 .legend span{display:inline-flex;align-items:center;gap:6px}
+.legend .unit{margin-left:auto;color:var(--text-3);font-size:12px}
 .tip{position:absolute;pointer-events:none;background:var(--text);color:var(--surface);border-radius:10px;
   padding:8px 10px;font-size:12.5px;line-height:1.45;white-space:nowrap;transform:translate(-50%,-100%);
   opacity:0;transition:opacity .12s;z-index:3}
@@ -722,7 +723,7 @@ function niceMax(v){ if (v<=0) return 100000; const p = Math.pow(10, Math.floor(
 
 function stackedBars(el, labels, series, opts={}){
   // series: [{key,name,color,values[]}]
-  const W=340, H=210, L=44, R=6, T=22, B=24;
+  const W=340, H=210, L=56, R=6, T=22, B=24;
   const n = labels.length, totals = labels.map((_,i)=>series.reduce((s,se)=>s+se.values[i],0));
   const step = niceMax(Math.max(...totals)/4), max = step*4;
   const bw = (W-L-R)/n, barW = Math.min(opts.maxBar||20, bw*(opts.fill||0.62));
@@ -730,7 +731,7 @@ function stackedBars(el, labels, series, opts={}){
   let g = "";
   for (let k=0;k<=4;k++){ const v = max*k/4, yy=y(v);
     g += `<line class="grid" x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" ${k===0?'style="stroke:var(--text-3);stroke-width:1"':''}/>`;
-    g += `<text class="axis num" x="${L-6}" y="${yy+3.5}" text-anchor="end">${k===0?'0':brlShort(v).replace("R$ ","")}</text>`; }
+    g += `<text class="axis num" x="${L-6}" y="${yy+3.5}" text-anchor="end">${k===0?'R$ 0':brlShort(v)}</text>`; }
   const marks = [];
   labels.forEach((lb,i) => {
     const cx = L + bw*i + bw/2, x0 = cx - barW/2;
@@ -762,7 +763,8 @@ function stackedBars(el, labels, series, opts={}){
   attachTip(el, marks);
 }
 
-function legend(el){ el.innerHTML = PAY_ORDER.map(p=>`<span><span class="dot" style="background:${PAY[p].c}"></span>${PAY[p].n}</span>`).join(""); }
+const UNIT = `<span class="unit">Valores em R$</span>`;
+function legend(el){ el.innerHTML = PAY_ORDER.map(p=>`<span><span class="dot" style="background:${PAY[p].c}"></span>${esc(PAY[p].n)}</span>`).join("") + UNIT; }
 
 function renderCharts(al){
   $("#yLbl").textContent = gY;
@@ -791,7 +793,7 @@ function renderCharts(al){
   legend($("#lgMonth")); legend($("#lgYear"));
   const FIX = [{key:"rec", name:"Assinaturas (todo mês)", color:"var(--s7)", test:a=>a.rec},
                {key:"parc", name:"Compras parceladas", color:"var(--s3)", test:a=>!a.rec && a.n>1}];
-  $("#lgFix").innerHTML = FIX.map(f=>`<span><span class="dot" style="background:${f.color}"></span>${f.name}</span>`).join("");
+  $("#lgFix").innerHTML = FIX.map(f=>`<span><span class="dot" style="background:${f.color}"></span>${f.name}</span>`).join("") + UNIT;
   const mLabels = MES3.map(s=>s[0]+s.slice(1,3).toLowerCase());
   const series = src => PAY_ORDER.map(p=>({key:p,name:PAY[p].n,color:PAY[p].c,ink:inkFor(p),values:src.map(it=>sum(it.filter(a=>a.e.pag===p)))}));
   const barOpts = {hl: gY===now.getFullYear()? now.getMonth() : -1, title:i=>`${MESES[i]} ${gY}`, fill:0.84, maxBar:22, segLabels:true, segSize:6.6};
