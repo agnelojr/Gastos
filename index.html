@@ -368,8 +368,8 @@ textarea.csv{width:100%;height:120px;border-radius:12px;border:1px solid var(--l
     </div></div>
     <h2>Exportar</h2>
     <div class="card">
-      <div class="muted" style="font-size:14px">Copie todos os lançamentos em CSV para colar no Excel ou Google Planilhas.</div>
-      <button class="btn" id="copyCsv" style="margin-top:12px">Copiar CSV</button>
+      <div class="muted" style="font-size:14px">Copie todos os lançamentos e cole numa planilha (Excel, Google Planilhas ou Numbers). Cada informação já cai na sua coluna.</div>
+      <button class="btn" id="copyCsv" style="margin-top:12px">Copiar para planilha</button>
       <textarea class="csv" id="csvBox" readonly></textarea>
     </div>
     <h2>Backup</h2>
@@ -857,8 +857,17 @@ function renderSettings(){
     <input data-cemoji="${i}" value="${esc(c.e)}" style="width:34px;flex:none;text-align:center">
     <input data-cname="${i}" value="${esc(c.n)}">
     <button class="del" data-cdel="${i}">Remover</button></div>`).join("");
-  $("#csvBox").value = toCSV();
+  $("#csvBox").value = toTSV();
   bkInfo();
+}
+// Tab-separated: pastes straight into columns in Excel, Google Sheets and Numbers
+function toTSV(){
+  const head = ["Data","Descrição","Categoria","Pagamento","Parcelas","Valor","Recorrente","Até"].join("\t");
+  const clean = t => String(t||"").replace(/[\t\n\r]+/g," ");
+  const rows = state.expenses.slice().sort((a,b)=>a.data.localeCompare(b.data)).map(e =>
+    [e.data.split("-").reverse().join("/"), clean(e.desc), clean(catById(e.cat).n), PAY[e.pag]?.n||"", e.parc||1,
+     (e.valor/100).toFixed(2).replace(".",","), e.rec?"Mensal":"", e.fim ? e.fim.split("-").reverse().join("/") : ""].join("\t"));
+  return [head, ...rows].join("\n");
 }
 function toCSV(){
   const head = "data;descricao;categoria;pagamento;parcelas;valor_total;recorrente;ate";
@@ -912,7 +921,7 @@ $("#addCat").addEventListener("click", async () => {
   $("#newCat").value=""; await store.saveCats(); toast("Categoria adicionada");
 });
 $("#copyCsv").addEventListener("click", async () => {
-  const t = toCSV(); try{ await navigator.clipboard.writeText(t); toast("CSV copiado"); } catch(e){ $("#csvBox").select(); toast("Selecione e copie o texto abaixo"); }
+  const t = toTSV(); try{ await navigator.clipboard.writeText(t); toast("Copiado! Cole na planilha"); } catch(e){ $("#csvBox").select(); toast("Selecione e copie o texto abaixo"); }
 });
 $("#wipe").addEventListener("click", () => ask("Apagar todos os lançamentos? Isso não pode ser desfeito.", async () => {
   const ids = state.expenses.map(e=>e.id); for (const id of ids){ try{ await store.del(id); }catch(e){} } toast("Lançamentos apagados");
