@@ -348,7 +348,8 @@ textarea.csv{width:100%;height:120px;border-radius:12px;border:1px solid var(--l
       <div class="hscroll" id="lPer">
         <button class="chip on" data-per="mes">Este mês</button><button class="chip" data-per="3m">Últimos 3 meses</button><button class="chip" data-per="ano">Este ano</button><button class="chip" data-per="tudo">Tudo</button><button class="chip" data-per="custom">📅 Escolher período</button>
       </div>
-      <div class="range" id="lRange"><label>De<input type="month" id="lDe"></label><label>Até<input type="month" id="lAte"></label></div>
+      <div class="range" id="lRange"><label>De<input type="date" id="lDe"></label><label>Até<input type="date" id="lAte"></label></div>
+      <div class="note" id="lRangeHint" style="display:none;margin:-4px 6px 10px">Dica: use as datas de fechamento da fatura para conferir com o extrato do cartão. Parcelas contam na data de cada parcela.</div>
     </div>
     <div class="hscroll" id="lPay"></div>
     <div class="hscroll" id="lCat"></div>
@@ -553,7 +554,9 @@ function allocations(){
     const base = Math.floor(e.valor / n), rest = e.valor - base*n;
     for (let k=0;k<n;k++){
       const t = (Y*12 + (M-1)) + k;
-      out.push({e, y:Math.floor(t/12), m:t%12, val: base + (k===0?rest:0), k:k+1, n, d:e.data});
+      const py=Math.floor(t/12), pm=t%12, plast=new Date(py,pm+1,0).getDate();
+      out.push({e, y:py, m:pm, val: base + (k===0?rest:0), k:k+1, n,
+        d: k===0 ? e.data : `${py}-${String(pm+1).padStart(2,"0")}-${String(Math.min(D,plast)).padStart(2,"0")}`});
     }
   }
   return out;
@@ -759,13 +762,7 @@ function perRange(){
   if (lf.per==="mes") return [nowT, nowT];
   if (lf.per==="3m") return [nowT-2, nowT];
   if (lf.per==="ano") return [now.getFullYear()*12, nowT];
-  if (lf.per==="custom"){
-    const p = v => { if (!v) return null; const [y,m]=v.split("-").map(Number); return y*12+m-1; };
-    let a = p(lf.de), b = p(lf.ate);
-    if (a==null) a = -Infinity; if (b==null) b = nowT;
-    if (a>b) [a,b]=[b,a];
-    return [a,b];
-  }
+  if (lf.per==="custom") return [-Infinity, Infinity]; // filtered by exact day below
   return [-Infinity, nowT];
 }
 function matchQ(e){ if (!lf.q) return true; const q = norm(lf.q); return norm(e.desc).includes(q) || norm(catById(e.cat).n).includes(q); }
@@ -778,18 +775,22 @@ function renderLista(al){
     state.cats.map(c=>`<button class="chip ${lf.cats.has(c.id)?'on':''}" data-lcat="${esc(c.id)}"><span class="dot" style="background:${catColor(c)}"></span>${c.e} ${esc(c.n)}</button>`).join("");
   $$("#lPer .chip").forEach(b=>b.classList.toggle("on", b.dataset.per===lf.per));
   $("#lRange").classList.toggle("on", lf.per==="custom");
+  $("#lRangeHint").style.display = lf.per==="custom" ? "block" : "none";
   $$("#lMode button").forEach(b=>b.classList.toggle("on", b.dataset.lm===lf.mode));
   $("#lFilters").style.display = lf.mode==="gastos" ? "block" : "none";
   $("#lqx").style.display = lf.q ? "block" : "none";
   if (lf.mode==="parc") return renderParcelas();
 
   const [a,b] = perRange();
-  const items = al.filter(x => { const t = x.y*12+x.m; return t>=a && t<=b && matchQ(x.e) && matchPC(x.e); });
+  let d1 = lf.de || "0000-01-01", d2 = lf.ate || todayISO(); if (d1 > d2) [d1,d2] = [d2,d1];
+  const inDay = x => lf.per!=="custom" || (x.d >= d1 && x.d <= d2);
+  const items = al.filter(x => { const t = x.y*12+x.m; return t>=a && t<=b && inDay(x) && matchQ(x.e) && matchPC(x.e); });
   const tot = sum(items), by = p => sum(items.filter(x=>x.e.pag===p));
   const nMeses = new Set(items.map(x=>x.y*12+x.m)).size;
-  $("#lSum").innerHTML = `<div class="faint" style="font-size:14px">${items.length} lançamento${items.length===1?'':'s'}${nMeses>1?` em ${nMeses} meses`:''}</div>
+  const br = v => v.split("-").reverse().join("/");
+  $("#lSum").innerHTML = `<div class="faint" style="font-size:14px">${items.length} lançamento${items.length===1?'':'s'}${lf.per==="custom" ? ` de ${br(d1)} a ${br(d2)}` : nMeses>1?` em ${nMeses} meses`:''}</div>
     <div class="v num">${brl(tot)}</div>
-    ${nMeses>1?`<div class="muted" style="font-size:14px">média de ${brl(tot/nMeses)} por mês</div>`:''}
+    ${nMeses>1 && lf.per!=="custom"?`<div class="muted" style="font-size:14px">média de ${brl(tot/nMeses)} por mês</div>`:''}
     <div class="br">${PAY_ORDER.map(p=>`<span><span class="dot" style="background:${PAY[p].c}"></span>${PAY[p].n} <b class="num">${brl(by(p))}</b></span>`).join("")}</div>`;
   if (!items.length){ $("#lOut").innerHTML = `<div class="list" style="margin-top:14px"><div class="empty"><div class="big">🔎</div>Nada encontrado com esses filtros.</div></div>`; return; }
   // group by month, newest first
@@ -841,7 +842,7 @@ $("#lq").addEventListener("input", e => { lf.q = e.target.value.trim(); clearTim
 $("#lqx").addEventListener("click", () => { $("#lq").value=""; lf.q=""; render(); });
 $("#lMode").addEventListener("click", e => { const b=e.target.closest("[data-lm]"); if(!b) return; lf.mode=b.dataset.lm; render(); });
 $("#lPer").addEventListener("click", e => { const b=e.target.closest("[data-per]"); if(!b) return; lf.per=b.dataset.per;
-  if (lf.per==="custom" && !lf.de){ const d=new Date(now.getFullYear(), now.getMonth()-5, 1); lf.de=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; lf.ate=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}`; $("#lDe").value=lf.de; $("#lAte").value=lf.ate; }
+  if (lf.per==="custom" && !lf.de){ const d=new Date(now.getTime()-30*864e5); lf.de=new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10); lf.ate=todayISO(); $("#lDe").value=lf.de; $("#lAte").value=lf.ate; }
   render(); });
 $("#lDe").addEventListener("change", e => { lf.de=e.target.value; render(); });
 $("#lAte").addEventListener("change", e => { lf.ate=e.target.value; render(); });
