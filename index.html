@@ -218,6 +218,8 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--text
 .swatch.on{border-color:var(--text)}
 .cardrow .tbtn{font-size:12px;font-weight:600;padding:5px 9px;border-radius:8px;background:var(--surface-2);color:var(--text-2);flex:none}
 .cardrow .dotbtn{width:22px;height:22px;border-radius:7px;flex:none}
+.empty .dica{text-align:left;font-size:14px;color:var(--text-2);margin-top:10px}
+.empty .dica p{margin:10px 0 0;line-height:1.45}
 .err{color:var(--danger);font-size:14px;text-align:center;min-height:18px;margin-top:8px}
 
 /* settings */
@@ -863,7 +865,19 @@ function renderLista(al){
     <div class="v num">${brl(tot)}</div>
     ${nMeses>1 && lf.per!=="custom"?`<div class="muted" style="font-size:14px">média de ${brl(tot/nMeses)} por mês</div>`:''}
     <div class="br">${PAY_ORDER.map(p=>`<span><span class="dot" style="background:${PAY[p].c}"></span>${PAY[p].n} <b class="num">${brl(by(p))}</b></span>`).join("")}</div>`;
-  if (!items.length){ $("#lOut").innerHTML = `<div class="list" style="margin-top:14px"><div class="empty"><div class="big">🔎</div>Nada encontrado com esses filtros.</div></div>`; return; }
+  if (!items.length){
+    // explain why nothing matched
+    const inPer = x => { const t = x.y*12+x.m; return t>=a && t<=b; };
+    const futuros = al.filter(x => (lf.per==="custom" ? (x.d >= d1 && x.d <= d2) : (inPer(x) || x.y*12+x.m > b)) && x.d > hojeL && matchQ(x.e) && matchPC(x.e));
+    const semCartao = lf.pay!=="all" ? al.filter(x => inPer(x) && inDay(x) && matchQ(x.e) && (!lf.cats.size || lf.cats.has(x.e.cat))) : [];
+    const outrosPag = [...new Set(semCartao.map(x=>x.e.pag))].map(p=>esc(PAY[p].n));
+    let dicas = "";
+    if (semCartao.length) dicas += `<p>Os filtros se somam: há <b>${semCartao.length}</b> lançamento${semCartao.length>1?'s':''} com essa busca/categoria, mas pago${semCartao.length>1?'s':''} com <b>${outrosPag.join(", ")}</b>, não com ${esc(PAY[lf.pay].n)}.</p><button class="btn" data-lfix="pay" style="margin-top:6px">Mostrar todos os cartões</button>`;
+    if (futuros.length && lf.per!=="custom") dicas += `<p>Há <b>${futuros.length}</b> lançamento${futuros.length>1?'s':''} com data futura (ex.: ${futuros[0].d.split("-").reverse().join("/")}). A Lista só conta o que já aconteceu; ele${futuros.length>1?'s':''} aparece${futuros.length>1?'m':''} quando a data chegar, e já aparece${futuros.length>1?'m':''} na aba Mês.</p>`;
+    if (!dicas && (lf.pay!=="all" || lf.cats.size || lf.q)) dicas = `<button class="btn" data-lfix="all" style="margin-top:6px">Limpar filtros</button>`;
+    $("#lOut").innerHTML = `<div class="list" style="margin-top:14px"><div class="empty"><div class="big">🔎</div>Nada encontrado com esses filtros.<div class="dica">${dicas}</div></div></div>`;
+    return;
+  }
   // group by month, newest first
   const months = {};
   items.forEach(x => { const k = x.y*12+x.m; (months[k] ||= []).push(x); });
@@ -917,6 +931,8 @@ $("#lPer").addEventListener("click", e => { const b=e.target.closest("[data-per]
   render(); });
 $("#lDe").addEventListener("change", e => { lf.de=e.target.value; render(); });
 $("#lAte").addEventListener("change", e => { lf.ate=e.target.value; render(); });
+$("#lOut").addEventListener("click", e => { const b=e.target.closest("[data-lfix]"); if(!b) return;
+  lf.pay="all"; if (b.dataset.lfix==="all"){ lf.cats.clear(); lf.q=""; $("#lq").value=""; } render(); });
 $("#lPay").addEventListener("click", e => { const b=e.target.closest("[data-lpay]"); if(!b) return; lf.pay=b.dataset.lpay; render(); });
 $("#lCat").addEventListener("click", e => { const b=e.target.closest("[data-lcat]"); if(!b) return; const k=b.dataset.lcat;
   if (k==="*") lf.cats.clear(); else if (lf.cats.has(k)) lf.cats.delete(k); else lf.cats.add(k); render(); });
