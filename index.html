@@ -312,7 +312,6 @@ textarea.csv{width:100%;height:120px;border-radius:12px;border:1px solid var(--l
       <div class="d" id="mDelta"></div>
     </div>
     <div class="cards" id="mCards"></div>
-    <div class="other" id="mOther"></div>
 
     <h2>Por categoria</h2>
     <div class="card" id="mCats"></div>
@@ -398,7 +397,7 @@ textarea.csv{width:100%;height:120px;border-radius:12px;border:1px solid var(--l
       <div class="swrow" id="cnColor"></div>
       <div class="row" style="border:0;padding-top:0"><button class="btn" id="cnAdd" style="margin:0">Adicionar</button></div>
     </div>
-    <p class="note">O Pix geral fica sempre disponível. Toque no selo do tipo (Crédito, Débito…) para trocar. Só o crédito aceita parcelas.</p>
+    <p class="note">Toque no selo do tipo (Crédito, Débito…) para trocar. Só o crédito aceita parcelas.</p>
     <h2>Categorias</h2>
     <div class="field" id="catEdit"></div>
     <div class="field"><div class="row">
@@ -484,7 +483,8 @@ const $$ = s => [...document.querySelectorAll(s)];
 const MESES = ["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
 const MES3 = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 // Cards are configured by each person in Ajustes; "outro" is the fixed Pix option.
-const DEFAULT_CARDS = [{id:"itau",n:"Itaú",t:"credito",c:"s2"},{id:"bradesco",n:"Bradesco",t:"credito",c:"s1"}];
+const PIX_PADRAO = {id:"outro",n:"Pix",t:"pix",c:null};
+const DEFAULT_CARDS = [{id:"itau",n:"Itaú",t:"credito",c:"s2"},{id:"bradesco",n:"Bradesco",t:"credito",c:"s1"},{...PIX_PADRAO}];
 const TIPO = {credito:"Crédito", debito:"Débito", pix:"Pix", boleto:"Boleto", saque:"Saque"};
 const TIPO_ORDER = Object.keys(TIPO);
 const REMOVED = {n:"Forma removida", c:"var(--outro)", t:null};
@@ -492,9 +492,8 @@ let PAY = {}, PAY_ORDER = [];
 function rebuildPay(){
   const o = {};
   state.cards.forEach(k => { o[k.id] = {n:k.n, c:`var(--${k.c||"outro"})`, t:k.t, slot:k.c}; });
-  o.outro = {n:"Pix", c:"var(--outro)", t:"pix"};
   PAY = new Proxy(o, {get:(t,k)=> t[k] || REMOVED});
-  PAY_ORDER = [...state.cards.map(k=>k.id), "outro"];
+  PAY_ORDER = state.cards.map(k=>k.id);
 }
 const inkFor = p => (p==="outro" || ["s4","s5"].includes(PAY[p].slot)) ? "#1a1a19" : "#fff";
 const SLOTS = ["s1","s2","s3","s4","s5","s6","s7","s8"];
@@ -519,8 +518,22 @@ let curY = now.getFullYear(), curM = now.getMonth(), gY = now.getFullYear();
 let payFilter = "all", yCardF = "all", view = "mes";
 
 const LS_KEY = "gastos.v1";
+const PIX_MIG = "gastos.pixMig";
+function ensurePix(){
+  let done = false; try{ done = localStorage.getItem(PIX_MIG)==="1"; }catch(e){}
+  if (done) return;
+  if (!state.cards.find(k=>k.id==="outro")){
+    // if the person already created an empty "Pix", merge it into the built-in one (keeping its colour and place)
+    const i = state.cards.findIndex(k => k.t==="pix" && String(k.n).trim().toLowerCase()==="pix" && !state.expenses.some(e=>e.pag===k.id));
+    if (i >= 0) state.cards[i] = {...PIX_PADRAO, c: state.cards[i].c};
+    else state.cards.push({...PIX_PADRAO});
+    lsSave();
+  }
+  try{ localStorage.setItem(PIX_MIG,"1"); }catch(e){}
+  rebuildPay();
+}
 function ensureCats(){ if (!state.cats.find(c=>c.id==="assin")) state.cats.push({id:"assin",n:"Assinaturas",e:"🔁",c:null}); }
-function lsLoad(){ try{ const j = JSON.parse(localStorage.getItem(LS_KEY)||"null"); if (j){ state.expenses = j.expenses||[]; if (j.cats && j.cats.length) state.cats = j.cats; if (Array.isArray(j.cards)) state.cards = j.cards; } }catch(e){} rebuildPay(); ensureCats(); }
+function lsLoad(){ try{ const j = JSON.parse(localStorage.getItem(LS_KEY)||"null"); if (j){ state.expenses = j.expenses||[]; if (j.cats && j.cats.length) state.cats = j.cats; if (Array.isArray(j.cards)) state.cards = j.cards; } }catch(e){} rebuildPay(); ensurePix(); ensureCats(); }
 function lsSave(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({expenses:state.expenses,cats:state.cats,cards:state.cards})); }catch(e){} }
 
 let col = null, unsub = null; // db collection for this viewer
@@ -561,7 +574,7 @@ lsLoad();
       if (!col) return;
       const exps = []; let cats = null;
       snap.docs.forEach(d => { const v = d.data(); if (!v) return;
-        if (v.kind === "config"){ cats = v.cats; if (Array.isArray(v.cards)){ state.cards = v.cards; rebuildPay(); } } else if (v.kind === "exp") { const {kind, ...rest} = v; exps.push(rest); } });
+        if (v.kind === "config"){ cats = v.cats; if (Array.isArray(v.cards)){ state.cards = v.cards; if (!state.cards.find(k=>k.id==="outro") && state.expenses.concat(exps).some(e=>e.pag==="outro") && !v.pixRemoved) state.cards.push({...PIX_PADRAO}); rebuildPay(); } } else if (v.kind === "exp") { const {kind, ...rest} = v; exps.push(rest); } });
       if (first && !snap.metadata.fromCache){
         first = false; clearTimeout(timer);
         // migrate any local-only entries to the cloud once
@@ -633,8 +646,6 @@ function renderMonth(al){
       <div class="n"><span class="dot" style="background:${PAY[p].c}"></span>${esc(PAY[p].n)}<span class="tipo">${TIPO[PAY[p].t] && TIPO[PAY[p].t]!==PAY[p].n ? TIPO[PAY[p].t] : ""}</span></div>
       <div class="v num">${brl(v)}</div><div class="p">${pct}% do mês</div></button>`;
   }).join("");
-  const o = by("outro");
-  $("#mOther").innerHTML = `<button data-pf="outro" style="font-weight:${payFilter==='outro'?700:400}"><span class="dot" style="background:var(--outro)"></span> Pix</button><b class="num">${brl(o)}</b>`;
 
   const f = payFilter==="all" ? items : items.filter(a=>a.e.pag===payFilter);
   renderCatBars($("#mCats"), f);
@@ -1083,7 +1094,7 @@ function openSheet(e){
 function closeSheet(){ $("#scrim").classList.remove("on"); $("#sheet").classList.remove("on"); document.activeElement?.blur(); }
 function syncSheet(){
   const opts = [...PAY_ORDER]; if (!opts.includes(fPay)) opts.unshift(fPay); // keep a removed card visible when editing
-  $("#fPay").innerHTML = opts.map(p => `<button data-p="${esc(p)}" class="${p===fPay?'on':''}"><span class="sw" style="background:${PAY[p].c}"></span><b>${esc(PAY[p].n)}</b><small>${p==="outro"?"à vista":(TIPO[PAY[p].t] && TIPO[PAY[p].t]!==PAY[p].n ? TIPO[PAY[p].t] : "&nbsp;")}</small></button>`).join("");
+  $("#fPay").innerHTML = opts.map(p => `<button data-p="${esc(p)}" class="${p===fPay?'on':''}"><span class="sw" style="background:${PAY[p].c}"></span><b>${esc(PAY[p].n)}</b><small>${(TIPO[PAY[p].t] && TIPO[PAY[p].t]!==PAY[p].n ? TIPO[PAY[p].t] : "&nbsp;")}</small></button>`).join("");
   $("#fRec").classList.toggle("on", fRec); $("#fRec").setAttribute("aria-checked", fRec);
   $("#recEndRow").style.display = fRec ? "flex" : "none";
   if (fRec) fParc = 1;
