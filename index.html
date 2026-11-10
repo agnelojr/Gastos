@@ -736,17 +736,21 @@ const sum = arr => arr.reduce((s,a)=>s+a.val,0);
 function renderBkBanner(){
   const el = $("#mBk"); if (!el) return;
   const get = k => { try{ return localStorage.getItem(k); }catch(e){ return null; } };
-  const last = +get(BK_KEY) || 0, snooze = +get(BK_KEY + ".snooze") || 0, n = state.expenses.length;
+  const last = +get(BK_KEY) || 0, n = state.expenses.length;
   const dias = last ? Math.floor((Date.now() - last) / 864e5) : null;
   const precisa = last ? dias >= 30 : n >= 5;
-  if (!precisa || Date.now() < snooze){ el.innerHTML = ""; return; }
+  // at most once a month: shown on the first opening of the month, then quiet until the next month
+  const mesAtual = todayISO().slice(0,7), ss = (()=>{ try{ return sessionStorage.getItem(BK_KEY+".sess"); }catch(e){ return null; } })();
+  const jaMostrou = get(BK_KEY + ".mes") === mesAtual && ss !== mesAtual;
+  if (!precisa || jaMostrou || get(BK_KEY + ".fechado") === mesAtual){ el.innerHTML = ""; return; }
+  try{ localStorage.setItem(BK_KEY + ".mes", mesAtual); sessionStorage.setItem(BK_KEY + ".sess", mesAtual); }catch(e){}
   el.innerHTML = `<div class="bkban"><div class="bkt">💾 <b>${last ? `Faz ${dias} dias que você não salva um backup` : "Você ainda não salvou nenhum backup"}</b>
     <span>Seus ${n} lançamentos ficam só neste iPhone. Salve uma cópia no iCloud Drive para não perder nada.</span></div>
     <div class="bka"><button class="bkgo" data-bkgo>Salvar backup</button><button class="bklater" data-bklater>Depois</button></div></div>`;
 }
 document.addEventListener("click", e => {
   if (e.target.closest("[data-bkgo]")){ $("#bkSave").click(); return; }
-  if (e.target.closest("[data-bklater]")){ try{ localStorage.setItem(BK_KEY + ".snooze", String(Date.now() + 7*864e5)); }catch(err){} renderBkBanner(); toast("Ok, lembro de novo em 7 dias"); }
+  if (e.target.closest("[data-bklater]")){ try{ localStorage.setItem(BK_KEY + ".fechado", todayISO().slice(0,7)); }catch(err){} renderBkBanner(); toast("Ok, lembro de novo no mês que vem"); }
 });
 
 function renderMonth(al){
