@@ -279,6 +279,11 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--text
 .cmp.down{color:#1a8f5f;background:color-mix(in srgb,#1a8f5f 12%,transparent)}
 .cmp.novo,.cmp.eq{color:var(--text-3);background:var(--surface-2)}
 @media (prefers-color-scheme: dark){.cmp.down{color:#3cc48f}}
+.bkban{margin-top:10px;background:color-mix(in srgb,var(--accent) 10%,var(--surface));border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);border-radius:var(--r);padding:12px 14px}
+.bkban .bkt{font-size:14px;line-height:1.4}.bkban .bkt span{display:block;color:var(--text-2);font-size:13px;margin-top:2px}
+.bkban .bka{display:flex;gap:8px;margin-top:10px}
+.bkban .bkgo{flex:1;background:var(--accent);color:#fff;border-radius:10px;padding:9px;font-weight:600;font-size:15px}
+.bkban .bklater{padding:9px 14px;border-radius:10px;background:var(--surface-2);color:var(--text-2);font-size:15px}
 .err{color:var(--danger);font-size:14px;text-align:center;min-height:18px;margin-top:8px}
 
 /* settings */
@@ -369,6 +374,7 @@ textarea.csv{width:100%;height:120px;border-radius:12px;border:1px solid var(--l
       <div class="v num" id="mTotal">R$ 0,00</div>
       <div class="d" id="mDelta"></div>
     </div>
+    <div id="mBk"></div>
     <div class="cards" id="mCards"></div>
     <div id="mFat"></div>
 
@@ -726,7 +732,25 @@ function monthAlloc(y,m,al){ const key=ymKey(y,m); return al.filter(a=>ymKey(a.y
 const sum = arr => arr.reduce((s,a)=>s+a.val,0);
 
 /* ---------------- render: month ---------------- */
+// reminder on the home screen: data lives only on this iPhone, so nudge a backup every 30 days
+function renderBkBanner(){
+  const el = $("#mBk"); if (!el) return;
+  const get = k => { try{ return localStorage.getItem(k); }catch(e){ return null; } };
+  const last = +get(BK_KEY) || 0, snooze = +get(BK_KEY + ".snooze") || 0, n = state.expenses.length;
+  const dias = last ? Math.floor((Date.now() - last) / 864e5) : null;
+  const precisa = last ? dias >= 30 : n >= 5;
+  if (!precisa || Date.now() < snooze){ el.innerHTML = ""; return; }
+  el.innerHTML = `<div class="bkban"><div class="bkt">💾 <b>${last ? `Faz ${dias} dias que você não salva um backup` : "Você ainda não salvou nenhum backup"}</b>
+    <span>Seus ${n} lançamentos ficam só neste iPhone. Salve uma cópia no iCloud Drive para não perder nada.</span></div>
+    <div class="bka"><button class="bkgo" data-bkgo>Salvar backup</button><button class="bklater" data-bklater>Depois</button></div></div>`;
+}
+document.addEventListener("click", e => {
+  if (e.target.closest("[data-bkgo]")){ $("#bkSave").click(); return; }
+  if (e.target.closest("[data-bklater]")){ try{ localStorage.setItem(BK_KEY + ".snooze", String(Date.now() + 7*864e5)); }catch(err){} renderBkBanner(); toast("Ok, lembro de novo em 7 dias"); }
+});
+
 function renderMonth(al){
+  renderBkBanner();
   $("#mLbl").textContent = `${MESES[curM]} ${curY}`;
   const items = monthAlloc(curY,curM,al);
   const total = sum(items);
@@ -1606,7 +1630,7 @@ $("#bkSave").addEventListener("click", async () => {
     if (navigator.canShare && navigator.canShare({files:[file]})){ await navigator.share({files:[file], title:"Backup dos gastos"}); }
     else { const a=document.createElement("a"); a.href=URL.createObjectURL(file); a.download=nome; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 4000); }
     try{ localStorage.setItem(BK_KEY, String(Date.now())); }catch(e){}
-    bkInfo(); toast("Backup pronto");
+    bkInfo(); renderBkBanner(); toast("Backup pronto");
   }catch(e){ if (e && e.name!=="AbortError") toast("Não foi possível salvar o backup"); }
 });
 let pendingBk = null;
