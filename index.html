@@ -165,6 +165,18 @@ h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--text
 .row:last-child{border-bottom:0}
 .row label{width:96px;color:var(--text-2);font-size:15px;flex:none}
 .row input,.row select{flex:1;border:0;background:none;outline:none;min-width:0;font-size:16px;text-align:right}
+.itn{padding:10px 14px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:1fr 1fr auto;gap:6px 10px;align-items:center}
+.itn input{border:0;background:none;outline:none;min-width:0;font-size:16px;color:var(--text)}
+.itn input.d{grid-column:1/4;font-weight:550}
+.itn input.q{border-top:1px solid var(--line);padding-top:6px}
+.itn input.p{border-top:1px solid var(--line);padding-top:6px;text-align:right}
+.itn .x{color:var(--danger);font-size:20px;line-height:1;padding:6px 2px 0 6px}
+.itact{justify-content:space-between}
+.itsum{padding:10px 14px;font-size:13px;color:var(--text-3);border-top:1px solid var(--line)}
+.itsum:empty{display:none}
+.itpaste textarea{width:100%;min-height:110px;border:0;border-bottom:1px solid var(--line);background:none;outline:none;padding:12px 14px;font:14px ui-monospace,Menlo,monospace;color:var(--text);resize:vertical}
+.lab .opt{text-transform:none;letter-spacing:0;font-weight:400}
+.item .t .sub{display:block;font-size:12.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
 .lab{font-size:13px;color:var(--text-3);margin:16px 6px 8px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{padding:8px 12px;border-radius:20px;background:var(--surface);font-size:14px;display:inline-flex;align-items:center;gap:6px;border:1.5px solid transparent}
@@ -578,6 +590,16 @@ html{background:#24272c !important}
     <div class="row"><button class="ncemo" id="ncEmo" aria-label="Escolher símbolo">🏷️</button><input id="ncName" placeholder="Nome da categoria" autocomplete="off" style="text-align:left"><button class="link strong" id="ncAdd">Criar</button></div>
     <div class="emogrid" id="ncGrid"></div>
     <div class="row" style="border:0;padding-top:4px"><label style="width:auto;font-size:13px" for="ncCustom">Ou digite outro símbolo</label><input id="ncCustom" maxlength="4" placeholder="😀" style="max-width:70px;text-align:center"></div>
+  </div>
+  <div class="lab">Itens da compra <span class="opt">(opcional)</span></div>
+  <div class="field" id="itBox">
+    <div id="itList"></div>
+    <div class="row itact"><button class="link" id="itAdd" type="button">＋ Adicionar item</button><button class="link" id="itPasteBtn" type="button">Colar lista</button></div>
+    <div class="itsum" id="itSum"></div>
+  </div>
+  <div class="field itpaste" id="itPasteBox" style="display:none">
+    <textarea id="itTxt" placeholder="Uma linha por item: descrição; quantidade; preço&#10;Ex.: Carne bovina chá de fora; 0,874 kg; 33,20" autocapitalize="off" autocomplete="off"></textarea>
+    <div class="row itact"><button class="link" id="itPCancel" type="button">Cancelar</button><button class="link strong" id="itPOk" type="button">Adicionar à lista</button></div>
   </div>
   <div class="err" id="fErr"></div>
   <button class="btn ghost" id="sEnd" style="display:none;color:var(--accent)">Encerrar assinatura neste mês</button>
@@ -1024,7 +1046,7 @@ function renderList(el, items, grouped){
     return `<div class="day">${esc(t)}</div><div class="list">` + g.items.map(a => { const c = catById(a.e.cat);
       return `<button class="item" data-edit="${esc(a.e.id)}" data-ym="${a.y}-${String(a.m+1).padStart(2,"0")}">
         <span class="ico" style="background:color-mix(in srgb, ${catColor(c)} 18%, transparent)">${c.e}</span>
-        <span class="t"><b>${esc(a.e.desc || c.n)}</b><span class="tag"><span class="dot" style="background:${PAY[a.e.pag]?.c||'var(--outro)'};width:8px;height:8px"></span>${PAY[a.e.pag]?.n||''} · ${a.rec?(a.fut?'🔁 previsto':'🔁 mensal'):esc(c.n)}</span></span>
+        <span class="t"><b>${esc(a.e.desc || c.n)}</b><span class="tag"><span class="dot" style="background:${PAY[a.e.pag]?.c||'var(--outro)'};width:8px;height:8px"></span>${PAY[a.e.pag]?.n||''} · ${a.rec?(a.fut?'🔁 previsto':'🔁 mensal'):esc(c.n)}</span>${subHTML(a.e)}</span>
         <span class="a num">${brl(a.val)}${a.n>1?`<small>${a.k}/${a.n} de ${brl(a.e.valor)}</small>`:''}</span></button>`;
     }).join("") + `</div>`;
   }).join("");
@@ -1250,7 +1272,7 @@ function perRange(){
   if (lf.per==="custom") return [-Infinity, Infinity]; // filtered by exact day below
   return [-Infinity, nowT];
 }
-function matchQ(e){ if (!lf.q) return true; const q = norm(lf.q); return norm(e.desc).includes(q) || norm(catById(e.cat).n).includes(q); }
+function matchQ(e){ if (!lf.q) return true; const q = norm(lf.q); return norm(e.desc).includes(q) || norm(catById(e.cat).n).includes(q) || norm(itensTxt(e)).includes(q); }
 function matchPC(e){ return (lf.pay==="all" || e.pag===lf.pay) && (!lf.cats.size || lf.cats.has(e.cat)); }
 function renderLista(al){
   // filter chips
@@ -1305,7 +1327,7 @@ function renderLista(al){
         const extra = x.n>1 ? ` · ${x.k}/${x.n}` : x.rec ? " · 🔁" : "";
         return `<button class="item" data-edit="${esc(x.e.id)}" data-ym="${x.y}-${String(x.m+1).padStart(2,"0")}">
           <span class="ico" style="background:color-mix(in srgb, ${catColor(c)} 18%, transparent)">${c.e}</span>
-          <span class="t"><b>${esc(x.e.desc || c.n)}</b><span class="tag">${dd} · <span class="dot" style="background:${PAY[x.e.pag]?.c};width:8px;height:8px"></span>${PAY[x.e.pag]?.n} · ${esc(c.n)}${extra}</span></span>
+          <span class="t"><b>${esc(x.e.desc || c.n)}</b><span class="tag">${dd} · <span class="dot" style="background:${PAY[x.e.pag]?.c};width:8px;height:8px"></span>${PAY[x.e.pag]?.n} · ${esc(c.n)}${extra}</span>${subHTML(x.e)}</span>
           <span class="a num">${brl(x.val)}</span></button>`; }).join("") + `</div>`;
   }).join("");
 }
@@ -1420,17 +1442,17 @@ function renderSettings(){
 }
 // Tab-separated: pastes straight into columns in Excel, Google Sheets and Numbers
 function toTSV(){
-  const head = ["Data","Descrição","Categoria","Pagamento","Parcelas","Valor","Recorrente","Até"].join("\t");
+  const head = ["Data","Descrição","Categoria","Pagamento","Parcelas","Valor","Recorrente","Até","Itens"].join("\t");
   const clean = t => String(t||"").replace(/[\t\n\r]+/g," ");
   const rows = state.expenses.slice().sort((a,b)=>a.data.localeCompare(b.data)).map(e =>
     [e.data.split("-").reverse().join("/"), clean(e.desc), clean(catById(e.cat).n), PAY[e.pag]?.n||"", e.parc||1,
-     (e.valor/100).toFixed(2).replace(".",","), e.rec?"Mensal":"", e.fim ? e.fim.split("-").reverse().join("/") : ""].join("\t"));
+     (e.valor/100).toFixed(2).replace(".",","), e.rec?"Mensal":"", e.fim ? e.fim.split("-").reverse().join("/") : "", clean((e.itens||[]).map(x => [x.d, x.q, x.p ? (x.p/100).toFixed(2).replace(".",",") : ""].filter(Boolean).join(" ")).join(" | "))].join("\t"));
   return [head, ...rows].join("\n");
 }
 function toCSV(){
-  const head = "data;descricao;categoria;pagamento;parcelas;valor_total;recorrente;ate";
+  const head = "data;descricao;categoria;pagamento;parcelas;valor_total;recorrente;ate;itens";
   const rows = state.expenses.slice().sort((a,b)=>a.data.localeCompare(b.data)).map(e =>
-    [e.data, `"${(e.desc||"").replace(/"/g,'""')}"`, catById(e.cat).n, PAY[e.pag]?.n||"", e.parc||1, (e.valor/100).toFixed(2).replace(".",","), e.rec?"mensal":"", e.fim||""].join(";"));
+    [e.data, `"${(e.desc||"").replace(/"/g,'""')}"`, catById(e.cat).n, PAY[e.pag]?.n||"", e.parc||1, (e.valor/100).toFixed(2).replace(".",","), e.rec?"mensal":"", e.fim||"", `"${(e.itens||[]).map(x => [x.d, x.q, x.p ? (x.p/100).toFixed(2).replace(".",",") : ""].filter(Boolean).join(" ")).join(" | ").replace(/"/g,'""')}"`].join(";"));
   return [head, ...rows].join("\n");
 }
 
@@ -1502,6 +1524,46 @@ $("#wipe").addEventListener("click", () => ask("Apagar todos os lançamentos? Is
 
 /* ---------------- sheet ---------------- */
 let editing = null, fPay = "outro", fCat = null, fParc = 1, fRec = false;
+let fItens = []; // purchase items of the expense being edited: {d: description, q: quantity text, p: price in cents}
+// price typed as "33,20", "1.234,56", "R$ 5" or "5.9" -> cents
+const parsePreco = s => { let t = String(s||"").replace(/[^\d.,]/g,""); if (!t) return 0;
+  if (t.includes(",")) t = t.replace(/\./g,"").replace(",","."); else if ((t.match(/\./g)||[]).length>1) t = t.replace(/\./g,"");
+  const n = parseFloat(t); return isFinite(n) ? Math.round(n*100) : 0; };
+const itensLimpos = arr => (arr||[]).map(x => ({d:String(x.d||"").trim(), q:String(x.q||"").trim(), p:x.p|0})).filter(x => x.d || x.q || x.p);
+const itensTxt = e => (e.itens||[]).map(x => x.d).filter(Boolean).join(", ");
+const subHTML = e => { const t = itensTxt(e); return t ? `<span class="sub">🧾 ${esc(t)}</span>` : ""; };
+function renderItens(){
+  $("#itList").innerHTML = fItens.map((x,i) => `<div class="itn">
+    <input class="d" data-it="d" data-i="${i}" placeholder="Descrição do item" value="${esc(x.d)}" autocomplete="off">
+    <input class="q" data-it="q" data-i="${i}" placeholder="Qtd (2 un, 0,5 kg)" value="${esc(x.q)}" autocomplete="off">
+    <input class="p num" data-it="p" data-i="${i}" inputmode="decimal" placeholder="Preço R$" value="${x.p ? esc(fmtInput(x.p)) : ""}" autocomplete="off">
+    <button class="x" data-itdel="${i}" type="button" aria-label="Remover item">×</button></div>`).join("");
+  sumItens();
+}
+function sumItens(){
+  const its = itensLimpos(fItens);
+  if (!its.length){ $("#itSum").textContent = ""; return; }
+  const soma = its.reduce((a,x)=>a+x.p,0), tot = parseInput($("#fVal").value);
+  $("#itSum").textContent = `${its.length} ${its.length===1?"item":"itens"} · soma ${brl(soma)}` + (tot && soma && tot!==soma ? ` · total do gasto ${brl(tot)}` : "");
+}
+$("#itAdd").addEventListener("click", () => { fItens.push({d:"",q:"",p:0}); renderItens(); const ins = $("#itList").querySelectorAll("input.d"); ins[ins.length-1]?.focus(); });
+$("#itList").addEventListener("input", ev => { const t = ev.target; if (!t.dataset.it) return; const x = fItens[+t.dataset.i]; if (!x) return;
+  if (t.dataset.it==="p") x.p = parsePreco(t.value); else x[t.dataset.it] = t.value; sumItens(); });
+$("#itList").addEventListener("click", ev => { const b = ev.target.closest("[data-itdel]"); if (!b) return; fItens.splice(+b.dataset.itdel,1); renderItens(); });
+$("#fVal").addEventListener("input", sumItens);
+$("#itPasteBtn").addEventListener("click", () => { $("#itPasteBox").style.display = "block"; $("#itTxt").value = ""; $("#itTxt").focus(); });
+$("#itPCancel").addEventListener("click", () => { $("#itPasteBox").style.display = "none"; });
+$("#itPOk").addEventListener("click", () => {
+  const novos = $("#itTxt").value.split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(l => {
+    const c = l.split(/;|\t/).map(z => z.trim());
+    if (c.length >= 3) return {d:c[0], q:c[1], p:parsePreco(c[2])};
+    if (c.length === 2) return {d:c[0], q:"", p:parsePreco(c[1])};
+    return {d:c[0], q:"", p:0};
+  });
+  if (!novos.length){ $("#itPasteBox").style.display = "none"; return; }
+  fItens = itensLimpos(fItens).concat(novos); renderItens();
+  $("#itPasteBox").style.display = "none"; toast(`${novos.length} ${novos.length===1?"item adicionado":"itens adicionados"}`);
+});
 const firstPay = () => state.cards[0]?.id || "outro";
 const isCredit = p => PAY[p].t === "credito";
 let editYM = null, editValShown = null; // month of the occurrence that was tapped (for recurring items)
@@ -1519,6 +1581,8 @@ function openSheet(e, ym){
   fPay = e ? e.pag : (payFilter!=="all" ? payFilter : firstPay());
   fCat = e ? e.cat : null; fParc = e ? (e.parc||1) : 1; fRec = !!(e && e.rec);
   $("#fFim").value = e?.fim || "";
+  fItens = (e?.itens||[]).map(x => ({d:x.d||"", q:x.q||"", p:x.p|0})); renderItens();
+  $("#itPasteBox").style.display = "none";
   $("#sEnd").style.display = "none";
   $("#fErr").textContent = "";
   $("#ncBox").style.display = "none";
@@ -1604,6 +1668,7 @@ $("#sSave").addEventListener("click", async () => {
   if (!fCat){ $("#fErr").textContent = "Escolha uma categoria."; return; }
   const data = $("#fData").value || todayISO();
   const e = { id: editing?.id || uid(), valor, desc: $("#fDesc").value.trim(), data, cat: fCat, pag: fPay, parc: fRec?1:fParc, criado: editing?.criado || Date.now() };
+  const itens = itensLimpos(fItens); if (itens.length) e.itens = itens;
   if (fRec && Array.isArray(editing?.skip) && editing.skip.length) e.skip = editing.skip.slice();
   if (fRec && editing?.vals && Object.keys(editing.vals).length) e.vals = {...editing.vals};
   if (fRec){ e.rec = true; const fim = $("#fFim").value; if (fim){ if (fim < data.slice(0,7)){ $("#fErr").textContent = "O mês final é antes do início."; return; } e.fim = fim; } }
