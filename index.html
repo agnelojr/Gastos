@@ -375,7 +375,7 @@ textarea.csv{width:100%;height:120px;border-radius:12px;border:1px solid var(--l
 
   <!-- LISTA -->
   <section class="view" id="v-lista">
-    <h1>Lista</h1>
+    <h1>Extrato</h1>
     <div class="search"><span class="faint">🔍</span><input id="lq" type="text" enterkeyhint="search" placeholder="Buscar (ex.: iFood, posto, mercado)" autocomplete="off"><button class="x" id="lqx" aria-label="Limpar busca" style="display:none">⊗</button></div>
     <div class="seg fgroup" id="lMode"><button data-lm="gastos" class="on">Gastos</button><button data-lm="parc">Parcelas em aberto</button></div>
     <div id="lFilters">
@@ -442,7 +442,7 @@ textarea.csv{width:100%;height:120px;border-radius:12px;border:1px solid var(--l
   <button class="tab on" data-v="mes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Mês</button>
   <button class="tab" data-v="graf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 20V12M10 20V6M15 20v-9M20 20V9"/></svg>Gráficos</button>
   <button class="fab" id="fab" aria-label="Novo gasto">+</button>
-  <button class="tab" data-v="lista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Lista</button>
+  <button class="tab" data-v="lista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Extrato</button>
   <button class="tab" data-v="aj"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Ajustes</button>
 </div></nav>
 
@@ -981,7 +981,7 @@ function renderLista(al){
     const outrosPag = [...new Set(semCartao.map(x=>x.e.pag))].map(p=>esc(PAY[p].n));
     let dicas = "";
     if (semCartao.length) dicas += `<p>Os filtros se somam: há <b>${semCartao.length}</b> lançamento${semCartao.length>1?'s':''} com essa busca/categoria, mas pago${semCartao.length>1?'s':''} com <b>${outrosPag.join(", ")}</b>, não com ${esc(PAY[lf.pay].n)}.</p><button class="btn" data-lfix="pay" style="margin-top:6px">Mostrar todos os cartões</button>`;
-    if (futuros.length && lf.per!=="custom") dicas += `<p>Há <b>${futuros.length}</b> lançamento${futuros.length>1?'s':''} com data futura (ex.: ${futuros[0].d.split("-").reverse().join("/")}). A Lista só conta o que já aconteceu; ele${futuros.length>1?'s':''} aparece${futuros.length>1?'m':''} quando a data chegar, e já aparece${futuros.length>1?'m':''} na aba Mês.</p>`;
+    if (futuros.length && lf.per!=="custom") dicas += `<p>Há <b>${futuros.length}</b> lançamento${futuros.length>1?'s':''} com data futura (ex.: ${futuros[0].d.split("-").reverse().join("/")}). O Extrato só conta o que já aconteceu; ele${futuros.length>1?'s':''} aparece${futuros.length>1?'m':''} quando a data chegar, e já aparece${futuros.length>1?'m':''} na aba Mês.</p>`;
     if (!dicas && (lf.pay!=="all" || lf.cats.size || lf.q)) dicas = `<button class="btn" data-lfix="all" style="margin-top:6px">Limpar filtros</button>`;
     $("#lOut").innerHTML = `<div class="list" style="margin-top:14px"><div class="empty"><div class="big">🔎</div>Nada encontrado com esses filtros.<div class="dica">${dicas}</div></div></div>`;
     return;
