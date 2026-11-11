@@ -354,7 +354,7 @@ html{background:#24272c !important}
 /* new-expense sheet: pinned header, no scroll bleed to the page behind, value caret at the end */
 body.lockbg{position:fixed;left:0;right:0;overflow:hidden}
 .scrim{touch-action:none}
-.sheet{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.sheet{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;max-height:calc(100vh - env(safe-area-inset-top) - 24px) !important;max-height:calc(100dvh - env(safe-area-inset-top) - 24px) !important}
 .shead{position:sticky;top:-8px;z-index:3;background:var(--bg);margin:-8px -16px 8px;padding:12px 16px 8px;border-bottom:1px solid var(--line)}
 .amount input{caret-color:transparent}
 .amount input:focus{text-decoration:underline;text-decoration-color:var(--accent);text-decoration-thickness:3px;text-underline-offset:8px}
