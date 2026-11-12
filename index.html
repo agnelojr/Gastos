@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Gastos">
-<meta name="theme-color" content="#24272c">
+<meta name="theme-color" content="#111111">
 <meta name="color-scheme" content="light">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap">
@@ -324,27 +324,26 @@ textarea.csv{width:100%;height:120px;border-radius:12px;border:1px solid var(--l
 .modal .box .acts button+button{border-left:1px solid var(--line);color:var(--danger);font-weight:600}
 .sync{font-size:12px;color:var(--text-3);text-align:center;margin-top:18px}
 
-/* ===== Tema Industrial ===== */
-:root{color-scheme:light;--bg:#f1f1ee;--surface:#ffffff;--surface-2:#e9e8e3;--line:#dcdad3;--text:#1e2125;--text-2:#4a4f57;--text-3:#878b92;--accent:#e09b00;
-  --s1:#3c7fd6;--s2:#e8742f;--s3:#2b9e78;--s4:#d6a11a;--s5:#c9638f;--s6:#5f9e38;--s7:#6f5fcf;--s8:#d64550;--outro:#9a9c9f;--danger:#d0393a;
-  --hdr:#24272c;--glow:rgba(224,155,0,.35);--shadow:none}
+/* ===== Tema Suíço minimalista ===== */
+:root{color-scheme:light;--bg:#ffffff;--surface:#ffffff;--surface-2:#f2f2f2;--line:#e3e3e3;--text:#111111;--text-2:#444444;--text-3:#8a8a8a;--accent:#e2231a;
+  --s1:#1f5fd1;--s2:#ef7d1a;--s3:#159a6c;--s4:#e2b100;--s5:#d0508c;--s6:#5fa32f;--s7:#6a4ed6;--s8:#e2231a;--outro:#9a9a9a;--danger:#d0201a;
+  --hdr:#111111;--glow:rgba(226,35,26,.25);--shadow:none}
 @media (prefers-color-scheme: dark){ :root{color-scheme:light} .down,.cmp.down{color:#1a8f5f !important} .catrow .lim.warn{color:#b26b00 !important} }
 html,body,button,input,select,textarea{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif !important}
-.num,.hero .v,.stat .v,.cc .v,.catrow .vl,.item .a,.frow b,.axis,.vlab,.slab,.sumcard .v,.mhead span,.tip .num,#mTotal{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace !important;font-feature-settings:"tnum" 1,"zero" 1;letter-spacing:-.02em}
-.card,.list,.cc,.stat,.field,.fat,.limalert,.bkban,.fathint{border-radius:10px !important;box-shadow:none !important;border:1px solid var(--line)}
+.num,.hero .v,.stat .v,.cc .v,.catrow .vl,.item .a,.frow b,.axis,.vlab,.slab,.sumcard .v,.mhead span,.tip .num,#mTotal{font-family:'Inter',-apple-system,sans-serif !important;font-feature-settings:"tnum" 1;letter-spacing:-.02em}
+.card,.list,.cc,.stat,.field,.fat,.limalert,.bkban,.fathint{border-radius:4px !important;box-shadow:none !important;border:1px solid var(--line)}
 .chip,.seg,.seg button,.tbtn,.cmp,.badge{border-radius:6px !important}
-h1{font-weight:750 !important;font-size:26px !important;letter-spacing:-.02em;border-radius:0 0 12px 12px !important;background:var(--hdr) !important;position:relative;overflow:hidden;padding-bottom:24px !important}
-h1::before{content:"";position:absolute;left:0;right:0;bottom:0;height:8px;background:repeating-linear-gradient(-45deg,#e09b00 0 12px,#24272c 12px 24px);pointer-events:none}
-h2{font-family:'JetBrains Mono',ui-monospace,monospace !important;font-size:11px !important;letter-spacing:.14em !important;color:var(--text-3) !important}
-.statusbg{background:#24272c !important}
-html{background:#24272c !important}
-.fab{border-radius:16px !important;background:var(--accent) !important;color:#24272c !important;box-shadow:0 6px 16px var(--glow) !important}
+h1{font-weight:800 !important;font-size:30px !important;letter-spacing:-.02em;border-radius:0 !important;background:var(--hdr) !important;position:relative;overflow:hidden;padding-bottom:16px !important}
+h2{font-size:11px !important;letter-spacing:.14em !important;color:#111 !important;font-weight:800 !important}
+.statusbg{background:#111111 !important}
+html{background:#111111 !important}
+.fab{border-radius:50% !important;background:var(--accent) !important;color:#fff !important;box-shadow:0 6px 16px var(--glow) !important}
 .tab.on{color:var(--accent) !important}
 .hero .v{font-size:38px !important;font-weight:600 !important}
 .catrow .track,.prog{height:5px !important;border-radius:2px !important}
 .catrow .fill{border-radius:2px !important}
 .cc .bar{width:3px !important}
-.btn:not(.ghost){border-radius:10px !important;background:var(--accent) !important;color:#24272c !important}
+.btn:not(.ghost){border-radius:10px !important;background:var(--accent) !important;color:#fff !important}
 .btn.ghost{border-radius:10px !important}
 .tabbar{border-top:1px solid var(--line) !important}
 .catrow.go{cursor:pointer;-webkit-tap-highlight-color:transparent;border-radius:6px}
