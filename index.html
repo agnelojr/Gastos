@@ -633,8 +633,8 @@ body.lockbg{position:fixed;left:0;right:0;overflow:hidden}
     <div class="itsum" id="itSum"></div>
   </div>
   <div class="field itpaste" id="itPasteBox" style="display:none">
-    <textarea id="itTxt" placeholder="Uma linha por item: descrição; quantidade; preço&#10;Ex.: Carne bovina chá de fora; 0,874 kg; 33,20" autocapitalize="off" autocomplete="off"></textarea>
     <div class="row itact"><button class="link" id="itPCancel" type="button">Cancelar</button><button class="link strong" id="itPOk" type="button">Adicionar à lista</button></div>
+    <textarea id="itTxt" placeholder="Uma linha por item: descrição; quantidade; preço&#10;Ex.: Carne bovina chá de fora; 0,874 kg; 33,20" autocapitalize="off" autocomplete="off"></textarea>
   </div>
   <div class="err" id="fErr"></div>
   <button class="btn ghost" id="sEnd" style="display:none;color:var(--accent)">Encerrar assinatura neste mês</button>
@@ -1635,17 +1635,21 @@ $("#itList").addEventListener("click", ev => { const b = ev.target.closest("[dat
 $("#fVal").addEventListener("input", sumItens);
 $("#itPasteBtn").addEventListener("click", () => { $("#itPasteBox").style.display = "block"; $("#itTxt").value = ""; $("#itTxt").focus(); });
 $("#itPCancel").addEventListener("click", () => { $("#itPasteBox").style.display = "none"; });
-$("#itPOk").addEventListener("click", () => {
+function addPasted(){
   const novos = $("#itTxt").value.split(/\r?\n/).map(l => l.trim()).filter(Boolean).map(l => {
     const c = l.split(/;|\t/).map(z => z.trim());
     if (c.length >= 3) return {d:c[0], q:c[1], p:parsePreco(c[2])};
     if (c.length === 2) return {d:c[0], q:"", p:parsePreco(c[1])};
     return {d:c[0], q:"", p:0};
   });
-  if (!novos.length){ $("#itPasteBox").style.display = "none"; return; }
-  fItens = itensLimpos(fItens).concat(novos); renderItens();
+  if (!novos.length){ $("#itPasteBox").style.display = "none"; return 0; }
+  fItens = itensLimpos(fItens).concat(novos); renderItens(); $("#itTxt").value = "";
   $("#itTxt").blur(); $("#itPasteBox").style.display = "none"; toast(`${novos.length} ${novos.length===1?"item adicionado":"itens adicionados"}`);
-});
+  return novos.length;
+}
+$("#itPOk").addEventListener("click", addPasted);
+// pasting a list (more than one line) adds it right away
+$("#itTxt").addEventListener("paste", () => setTimeout(() => { if ($("#itTxt").value.trim().split(/\r?\n/).length > 1) addPasted(); }, 60));
 const firstPay = () => state.cards[0]?.id || "outro";
 const isCredit = p => PAY[p].t === "credito";
 let editYM = null, editValShown = null; // month of the occurrence that was tapped (for recurring items)
@@ -1675,6 +1679,10 @@ function openSheet(e, ym){
 }
 function closeSheet(){ $("#scrim").classList.remove("on"); $("#sheet").classList.remove("on"); document.activeElement?.blur(); unlockBg(); }
 let bgY = 0;
+if (window.visualViewport){
+  const kbPad = () => { const kb = Math.max(0, innerHeight - visualViewport.height - visualViewport.offsetTop); $("#sheet").style.paddingBottom = kb > 80 ? (kb + 24) + "px" : ""; };
+  visualViewport.addEventListener("resize", kbPad); visualViewport.addEventListener("scroll", kbPad);
+}
 function lockBg(){ if (document.body.classList.contains("lockbg")) return; bgY = scrollY; document.body.style.top = -bgY + "px"; document.body.classList.add("lockbg"); }
 function unlockBg(){ if (!document.body.classList.contains("lockbg")) return; document.body.classList.remove("lockbg"); document.body.style.top = ""; scrollTo(0, bgY); }
 // "Repetir": open a new expense already filled in with the same description, category and card, dated today
@@ -1787,6 +1795,7 @@ $("#fab").addEventListener("click", ()=>openSheet());
 $("#sCancel").addEventListener("click", closeSheet);
 $("#scrim").addEventListener("click", closeSheet);
 $("#sSave").addEventListener("click", async () => {
+  if ($("#itPasteBox").style.display !== "none" && $("#itTxt").value.trim()) addPasted();
   const valor = parseInput($("#fVal").value);
   if (!valor){ $("#fErr").textContent = "Informe o valor do gasto."; return; }
   if (!fCat){ $("#fErr").textContent = "Escolha uma categoria."; return; }
